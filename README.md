@@ -1,6 +1,5 @@
 # ⚡ Power Guard – Intelligent Energy Monitoring System
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-ESP32%20%7C%20LabVIEW-green)
 
 ---
