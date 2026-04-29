@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoltSense | Live Meter</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+font-family:Arial;
+background:linear-gradient(135deg,#06132e,#0d2d62,#1a5fb4);
+color:white;
+min-height:100vh;
+}
+
+header{
+background:white;
+padding:15px 8%;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.logo{
+font-size:22px;
+font-weight:bold;
+color:#1a5fb4;
+text-decoration:none;
+}
+
+nav a{
+margin-left:18px;
+text-decoration:none;
+color:#333;
+font-weight:bold;
+}
+
+nav .active{color:#1a5fb4;}
+
+.container{
+width:92%;
+max-width:1200px;
+margin:auto;
+padding:25px 0;
+}
+
+h2{text-align:center;margin-bottom:10px;}
+
+.clock{
+text-align:center;
+font-size:18px;
+color:#dce8ff;
+margin-bottom:25px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+gap:18px;
+}
+
+.card{
+background:rgba(255,255,255,0.08);
+padding:22px;
+border-radius:18px;
+text-align:center;
+box-shadow:0 10px 20px rgba(0,0,0,.15);
+}
+
+.title{
+font-size:16px;
+margin-bottom:12px;
+color:#dce8ff;
+}
+
+.val{
+font-size:30px;
+font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<a href="#" class="logo">⚡ VoltSense</a>
+
+<nav>
+<a href="index.html">Home</a>
+<a href="auth.html">Login</a>
+<a href="dashboard.html" class="active">Dashboard</a>
+<a href="utility.html">Utility</a>
+</nav>
+</header>
+
+<div class="container">
+
+<h2>⚡ Live Meter Monitor</h2>
+
+<div class="clock" id="clock">--</div>
+
+<div class="grid">
+
+<div class="card"><div class="title">Voltage</div><div class="val" id="voltage">--</div></div>
+<div class="card"><div class="title">Current</div><div class="val" id="current">--</div></div>
+<div class="card"><div class="title">Power</div><div class="val" id="power">--</div></div>
+<div class="card"><div class="title">Energy</div><div class="val" id="energy">--</div></div>
+<div class="card"><div class="title">Cost</div><div class="val" id="cost">--</div></div>
+<div class="card"><div class="title">Relay</div><div class="val" id="relay">--</div></div>
+
+</div>
+</div>
+
+<script>
+// 🔥 Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyBxSwZqGENQ6rCYbx-ip0G9odmkCi6XTFc",
+  authDomain: "voultsense.firebaseapp.com",
+  databaseURL: "https://voultsense-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "voultsense",
+  storageBucket: "voultsense.firebasestorage.app",
+  messagingSenderId: "44159856549",
+  appId: "1:44159856549:web:8feae5157c9c87e4d8424c"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// 🕒 Live Clock
+setInterval(()=>{
+    const now = new Date();
+    document.getElementById("clock").innerText =
+    now.toLocaleDateString() + " | " + now.toLocaleTimeString();
+},1000);
+
+// 📡 Fetch Live Data
+db.ref("1_energy_monitor").on("value",(snap)=>{
+    let d = snap.val();
+    console.log("DATA:", d);
+
+    if(!d){
+        console.warn("No data found in Firebase!");
+        return;
+    }
+
+    // ✅ Safe values with fallback
+    document.getElementById("voltage").innerText = (d.voltage_V ?? 0) + " V";
+    document.getElementById("current").innerText = (d.current_A ?? 0) + " A";
+    document.getElementById("power").innerText = (d.power_W ?? 0) + " W";
+    document.getElementById("energy").innerText = (d.energy_kWh ?? 0) + " kWh";
+    document.getElementById("cost").innerText = "₹" + (d.bill_INR ?? 0);
+
+    // ✅ FIXED RELAY (works for 0/1 and "0"/"1")
+    const relayState = Number(d.relay) === 1 ? "ON" : "OFF";
+    document.getElementById("relay").innerText = relayState;
+
+    // 🧪 Debug
+    console.log("Relay:", d.relay, "| Type:", typeof d.relay);
+});
+</script>
+
+</body>
+</html>

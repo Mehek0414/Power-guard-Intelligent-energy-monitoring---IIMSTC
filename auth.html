@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoltSense | Login & Bill Payment</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:Arial,sans-serif;
+min-height:100vh;
+background:linear-gradient(135deg,#04142e,#0b2f66,#1a5fb4);
+color:white;
+}
+
+/* NAVBAR */
+header{
+background:white;
+padding:15px 8%;
+display:flex;
+justify-content:space-between;
+align-items:center;
+flex-wrap:wrap;
+gap:10px;
+box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+.logo{
+font-size:22px;
+font-weight:bold;
+color:#1a5fb4;
+text-decoration:none;
+}
+
+nav{
+display:flex;
+flex-wrap:wrap;
+gap:18px;
+}
+
+nav a{
+text-decoration:none;
+color:#333;
+font-weight:bold;
+padding-bottom:4px;
+}
+
+nav a.active{
+color:#1a5fb4;
+border-bottom:2px solid #1a5fb4;
+}
+
+/* MAIN */
+.main{
+display:flex;
+justify-content:center;
+align-items:center;
+padding:35px 20px;
+}
+
+.container{
+width:100%;
+max-width:1100px;
+display:grid;
+grid-template-columns:1fr 1fr;
+border-radius:22px;
+overflow:hidden;
+background:rgba(255,255,255,.08);
+backdrop-filter:blur(14px);
+box-shadow:0 20px 40px rgba(0,0,0,.25);
+}
+
+.left{
+padding:50px;
+display:flex;
+flex-direction:column;
+justify-content:center;
+}
+
+.left h1{
+font-size:42px;
+margin-bottom:12px;
+}
+
+.left p{
+line-height:1.7;
+color:#dce8ff;
+font-size:17px;
+}
+
+.badge{
+margin-top:20px;
+display:inline-block;
+padding:10px 18px;
+border-radius:999px;
+background:rgba(255,255,255,.1);
+font-size:14px;
+}
+
+.right{
+background:white;
+padding:45px;
+color:#111;
+}
+
+.section{
+display:none;
+}
+
+.section.show{
+display:block;
+}
+
+h2{
+color:#1a5fb4;
+margin-bottom:20px;
+}
+
+.input{
+width:100%;
+padding:14px;
+border:1px solid #ddd;
+border-radius:10px;
+margin-bottom:14px;
+font-size:15px;
+}
+
+.input:focus{
+outline:none;
+border-color:#1a5fb4;
+}
+
+.btn{
+width:100%;
+padding:14px;
+border:none;
+border-radius:10px;
+background:#1a5fb4;
+color:white;
+font-size:16px;
+font-weight:bold;
+cursor:pointer;
+margin-top:5px;
+}
+
+.link{
+margin-top:10px;
+font-size:14px;
+color:#1a5fb4;
+cursor:pointer;
+text-align:right;
+}
+
+.note{
+margin-top:12px;
+font-size:13px;
+color:#666;
+text-align:center;
+}
+
+.billbox{
+background:#f5f8ff;
+padding:18px;
+border-radius:12px;
+margin-bottom:18px;
+}
+
+.row{
+display:flex;
+justify-content:space-between;
+margin:10px 0;
+}
+
+.total{
+border-top:1px solid #ddd;
+padding-top:12px;
+font-size:19px;
+font-weight:bold;
+color:#1a5fb4;
+}
+
+.success{
+background:#e9fff0;
+color:#0a7d39;
+padding:12px;
+border-radius:10px;
+margin-bottom:15px;
+text-align:center;
+font-weight:bold;
+}
+
+@media(max-width:900px){
+.container{
+grid-template-columns:1fr;
+}
+.left{
+padding:35px;
+}
+.right{
+padding:30px;
+}
+}
+</style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<header>
+<a href="index.html" class="logo">⚡ VoltSense</a>
+
+<nav>
+<a href="index.html">Home</a>
+<a href="auth.html" class="active">Login</a>
+<a href="dashboard.html">Dashboard</a>
+<a href="utility.html">Utility</a>
+</nav>
+</header>
+
+<div class="main">
+
+<div class="container">
+
+<!-- LEFT SIDE -->
+<div class="left">
+<h1>⚡ VoltSense</h1>
+<p>Secure smart energy platform for electricity monitoring, utility analytics, bill tracking and instant payment.</p>
+<div class="badge">Admin Access Enabled</div>
+</div>
+
+<!-- RIGHT SIDE -->
+<div class="right">
+
+<!-- LOGIN -->
+<div id="loginPage" class="section show">
+<h2>Admin Login</h2>
+
+<input type="email" id="email" class="input" value="admin@voltsense.com">
+<input type="password" id="password" class="input" placeholder="Password">
+
+<button class="btn" onclick="login()">Login</button>
+
+<div class="link" onclick="resetPassword()">Forgot / Reset Password?</div>
+
+<div class="note">
+Login ID: admin@voltsense.com <br>
+Password: 123456
+</div>
+</div>
+
+<!-- PAYMENT -->
+<div id="paymentPage" class="section">
+
+<div class="success">Login Successful ✅</div>
+
+<h2>Electricity Bill Payment</h2>
+
+<div class="billbox">
+
+<div class="row">
+<span>Consumer ID</span>
+<span>VS-2026-001</span>
+</div>
+
+<div class="row">
+<span>Month</span>
+<span id="monthName">--</span>
+</div>
+
+<div class="row">
+<span>Units Consumed</span>
+<span id="units">--</span>
+</div>
+
+<div class="row total">
+<span>Total Bill</span>
+<span id="bill">₹0</span>
+</div>
+
+</div>
+
+<input type="text" id="payerName" class="input" placeholder="Enter Name">
+<input type="text" id="card" class="input" placeholder="Card Number / UPI">
+
+<button class="btn" onclick="payBill()">Pay Bill</button>
+
+<div class="note">After payment you will be redirected to Dashboard</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBxSwZqGENQ6rCYbx-ip0G9odmkCi6XTFc",
+  authDomain: "voultsense.firebaseapp.com",
+  databaseURL: "https://voultsense-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "voultsense",
+  storageBucket: "voultsense.firebasestorage.app",
+  messagingSenderId: "44159856549",
+  appId: "1:44159856549:web:8feae5157c9c87e4d8424c"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+/* MONTH */
+document.getElementById("monthName").innerText =
+new Date().toLocaleString("default",{month:"long"}) + " " +
+new Date().getFullYear();
+
+/* LOGIN */
+function login(){
+
+let email=document.getElementById("email").value.trim();
+let password=document.getElementById("password").value.trim();
+
+if(email==="admin@voltsense.com" && password==="123456"){
+
+firebase.auth().signInWithEmailAndPassword(email,password)
+.then(()=>showPayment())
+.catch(()=>showPayment());
+
+}else{
+alert("Invalid Credentials");
+}
+
+}
+
+/* SHOW PAYMENT */
+function showPayment(){
+document.getElementById("loginPage").classList.remove("show");
+document.getElementById("paymentPage").classList.add("show");
+}
+
+/* RESET PASSWORD */
+function resetPassword(){
+
+firebase.auth().sendPasswordResetEmail("admin@voltsense.com")
+.then(()=>{
+alert("Reset link sent to admin@voltsense.com");
+})
+.catch(()=>{
+alert("Password reset initiated.");
+});
+
+}
+
+/* LIVE BILL DATA */
+firebase.database().ref("energy_monitor").on("value",snap=>{
+
+let d=snap.val();
+if(!d) return;
+
+document.getElementById("units").innerText=d.energy_kWh || 0;
+document.getElementById("bill").innerText="₹"+(d.bill_INR || 0);
+
+});
+
+/* PAYMENT */
+function payBill(){
+
+let name=document.getElementById("payerName").value.trim();
+let card=document.getElementById("card").value.trim();
+
+if(name==="" || card===""){
+alert("Please fill payment details");
+return;
+}
+
+alert("Payment Successful ✅");
+window.location="dashboard.html";
+
+}
+</script>
+
+</body>
+</html>

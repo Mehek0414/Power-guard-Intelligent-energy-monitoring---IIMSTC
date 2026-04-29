@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoltSense | Utility</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+font-family:Arial;
+background:linear-gradient(135deg,#06132e,#0d2d62,#1a5fb4);
+color:white;
+min-height:100vh;
+}
+
+header{
+background:white;
+padding:15px 8%;
+display:flex;
+justify-content:space-between;
+align-items:center;
+flex-wrap:wrap;
+}
+
+.logo{
+text-decoration:none;
+font-size:22px;
+font-weight:bold;
+color:#1a5fb4;
+}
+
+nav{
+display:flex;
+gap:18px;
+flex-wrap:wrap;
+}
+
+nav a{
+text-decoration:none;
+color:#333;
+font-weight:bold;
+}
+
+nav a.active{
+color:#1a5fb4;
+border-bottom:2px solid #1a5fb4;
+}
+
+.container{
+width:92%;
+max-width:1200px;
+margin:auto;
+padding:25px 0;
+}
+
+h2{text-align:center;margin-bottom:20px;}
+
+.buttons{text-align:center;margin-bottom:20px;}
+
+button{
+padding:10px 18px;
+border:none;
+border-radius:8px;
+margin:8px;
+cursor:pointer;
+font-weight:bold;
+background:white;
+color:#111;
+}
+
+button.active{
+background:#1a5fb4;
+color:white;
+}
+
+.box{
+background:rgba(255,255,255,0.08);
+padding:25px;
+border-radius:18px;
+}
+
+canvas{height:430px !important;}
+
+.info{
+margin-top:18px;
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:15px;
+}
+
+.card{
+background:rgba(255,255,255,.08);
+padding:18px;
+border-radius:15px;
+text-align:center;
+}
+
+.card h3{
+font-size:15px;
+margin-bottom:8px;
+color:#d7e8ff;
+}
+
+.card p{
+font-size:24px;
+font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<a href="index.html" class="logo">⚡ VoltSense</a>
+
+<nav>
+<a href="index.html">Home</a>
+<a href="auth.html">Login</a>
+<a href="dashboard.html">Dashboard</a>
+<a href="utility.html" class="active">Utility</a>
+</nav>
+</header>
+
+<div class="container">
+
+<h2>⚡ Energy Usage Analytics</h2>
+
+<div class="buttons">
+<button id="dailyBtn" class="active" onclick="setMode('daily')">Daily</button>
+<button id="weeklyBtn" onclick="setMode('weekly')">Weekly</button>
+</div>
+
+<div class="box">
+<canvas id="barChart"></canvas>
+</div>
+
+<div class="info">
+<div class="card">
+<h3>Total Usage</h3>
+<p id="totalUsage">0</p>
+</div>
+
+<div class="card">
+<h3>Total Bill</h3>
+<p id="totalBill">₹0</p>
+</div>
+
+<div class="card">
+<h3>Peak Current</h3>
+<p id="peakCurrent">0 A</p>
+</div>
+</div>
+
+</div>
+
+<script>
+
+// 🔥 Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyBxSwZqGENQ6rCYbx-ip0G9odmkCi6XTFc",
+  authDomain: "voultsense.firebaseapp.com",
+  databaseURL: "https://voultsense-default-rtdb.asia-southeast1.firebasedatabase.app/",
+  projectId: "voultsense",
+  storageBucket: "voultsense.firebasestorage.app",
+  messagingSenderId: "44159856549",
+  appId: "1:44159856549:web:8feae5157c9c87e4d8424c"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let mode = "daily";
+let chart;
+
+/* MODE SWITCH */
+function setMode(type){
+mode = type;
+
+document.getElementById("dailyBtn").classList.remove("active");
+document.getElementById("weeklyBtn").classList.remove("active");
+
+if(type === "daily"){
+document.getElementById("dailyBtn").classList.add("active");
+}else{
+document.getElementById("weeklyBtn").classList.add("active");
+}
+
+loadData();
+}
+
+/* DRAW GRAPH */
+function draw(labels, usage, current, bill){
+
+if(chart) chart.destroy();
+
+chart = new Chart(document.getElementById("barChart"),{
+type:"bar",
+data:{
+labels:labels,
+datasets:[{
+label:"Energy (kWh)",
+data:usage,
+borderRadius:8,
+barThickness:28
+}]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false,
+plugins:{
+legend:{labels:{color:"white"}},
+tooltip:{
+callbacks:{
+label:function(context){
+let i = context.dataIndex;
+return [
+"Usage: "+usage[i].toFixed(3)+" kWh",
+"Current: "+current[i].toFixed(2)+" A",
+"Bill: ₹"+bill[i].toFixed(2)
+];
+}
+}
+}
+},
+scales:{
+x:{ticks:{color:"white"}},
+y:{ticks:{color:"white"},beginAtZero:true}
+}
+}
+});
+}
+
+/* LOAD FIREBASE DATA */
+function loadData(){
+
+db.ref("2_energy_logs").once("value", snap => {
+
+let daily = {};
+let weekly = {};
+
+let totalUse = 0;
+let totalBill = 0;
+let peak = 0;
+
+snap.forEach(child => {
+
+let d = child.val();
+if(!d.timestamp) return;
+
+let dt = new Date(d.timestamp);
+
+let day = dt.toLocaleDateString();
+let weekNo = getWeekNumber(dt);
+let weekKey = "Week " + weekNo;
+
+let energy = parseFloat(d.energy_kWh) || 0;
+let current = parseFloat(d.current_A) || 0;
+let bill = parseFloat(d.bill_INR) || 0;
+
+totalUse += energy;
+totalBill += bill;
+
+if(current > peak) peak = current;
+
+// DAILY
+if(!daily[day]) daily[day] = {energy:0,current:0,bill:0};
+daily[day].energy += energy;
+daily[day].current += current;
+daily[day].bill += bill;
+
+// WEEKLY
+if(!weekly[weekKey]) weekly[weekKey] = {energy:0,current:0,bill:0};
+weekly[weekKey].energy += energy;
+weekly[weekKey].current += current;
+weekly[weekKey].bill += bill;
+
+});
+
+/* SUMMARY */
+document.getElementById("totalUsage").innerText = totalUse.toFixed(3) + " kWh";
+document.getElementById("totalBill").innerText = "₹" + totalBill.toFixed(2);
+document.getElementById("peakCurrent").innerText = peak.toFixed(2) + " A";
+
+/* GRAPH */
+if(mode === "daily"){
+draw(
+Object.keys(daily),
+Object.values(daily).map(x=>x.energy),
+Object.values(daily).map(x=>x.current),
+Object.values(daily).map(x=>x.bill)
+);
+}else{
+draw(
+Object.keys(weekly),
+Object.values(weekly).map(x=>x.energy),
+Object.values(weekly).map(x=>x.current),
+Object.values(weekly).map(x=>x.bill)
+);
+}
+
+});
+}
+
+/* WEEK NUMBER */
+function getWeekNumber(d){
+d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+let yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+return Math.ceil((((d - yearStart)/86400000)+1)/7);
+}
+
+loadData();
+
+</script>
+
+</body>
+</html>

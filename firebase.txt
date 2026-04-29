@@ -1,0 +1,271 @@
+STEP 1: Create Firebase Project
+Go to Firebase Console
+Click Create Project
+Project Name:
+voltsense
+Continue → Create
+STEP 2: Enable Realtime Database
+Inside project
+Click:
+Build → Realtime Database
+Click Create Database
+
+Choose:
+
+Asia-Southeast1
+
+(You already use this region)
+
+STEP 3: Start in Test Mode
+
+Use temporary rules:
+
+{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}
+
+This allows ESP32 + Website access.
+
+Later secure it.
+
+STEP 4: Register Web App
+Project Settings ⚙️
+Add App → Web </>
+App name:
+VoltSense Web
+
+Then Firebase gives:
+
+const firebaseConfig = {
+  apiKey: "...",
+  authDomain: "...",
+  databaseURL: "...",
+  projectId: "voltsense"
+}
+
+Use same in HTML pages.
+
+STEP 5: Enable Login Authentication
+
+Go to:
+
+Build → Authentication
+
+Enable:
+
+Email / Password
+
+Create admin account:
+
+Email: admin@voltsense.com
+Password: 123456
+STEP 6: Correct Database Structure
+
+This is VERY IMPORTANT.
+
+Your website expects these nodes:
+
+{
+  "energy_monitor": {
+    "voltage": 230,
+    "current": 2.15,
+    "power": 495,
+    "energy_kWh": 6.82,
+    "bill_INR": 54.56,
+    "relay": 1
+  },
+
+  "energy_logs": {
+    "log1": {
+      "timestamp": 1776831000000,
+      "voltage": 230,
+      "current": 2.15,
+      "power": 495,
+      "energy_kWh": 0.32,
+      "bill_INR": 2.56
+    },
+
+    "log2": {
+      "timestamp": 1776834600000,
+      "voltage": 228,
+      "current": 1.98,
+      "power": 451,
+      "energy_kWh": 0.28,
+      "bill_INR": 2.24
+    }
+  }
+}
+Meaning of Each Field
+energy_monitor = Live Current Reading
+
+Updated every few seconds.
+
+energy_monitor
+
+Used in:
+
+Dashboard live cards
+Live meter page
+Bill page
+energy_logs = History Records
+
+Every 5 mins / 15 mins / 1 hour store logs.
+
+Used in:
+
+Daily bars
+Weekly bars
+Utility analytics
+STEP 7: ESP32 Must Upload Both Paths
+Live data every 3 sec
+energy_monitor
+History data every 5 min
+energy_logs/auto_generated_key
+STEP 8: Example ESP32 Upload Logic
+Live Update
+Firebase.setFloat("energy_monitor/voltage", voltage);
+Firebase.setFloat("energy_monitor/current", current);
+Firebase.setFloat("energy_monitor/power", power);
+Firebase.setFloat("energy_monitor/energy_kWh", totalEnergy);
+Firebase.setFloat("energy_monitor/bill_INR", bill);
+Firebase.setInt("energy_monitor/relay", 1);
+History Push
+Firebase.pushFloat("energy_logs/log1/current", current);
+
+Better use JSON push.
+
+STEP 9: Billing Formula
+
+Example:
+
+1 unit = ₹8
+
+ESP32 calculates:
+
+bill = energy_kWh * 8;
+
+Upload:
+
+bill_INR
+STEP 10: Timestamp Format
+
+Use:
+
+millis()
+
+Better:
+
+Unix Time from NTP
+
+Example:
+
+1776831000000
+
+(milliseconds)
+
+Required for graphs.
+
+STEP 11: Sensor Side
+
+If using:
+
+PZEM004T
+
+Direct gives:
+
+Voltage
+Current
+Power
+Energy
+
+Best option.
+
+ACS712 + ZMPT101B
+
+Need manual calculations.
+
+STEP 12: How Utility Page Uses Logs
+
+It reads:
+
+energy_logs
+
+Then groups:
+
+Daily
+
+All logs of same date combined.
+
+Weekly
+
+All logs of same week combined.
+
+STEP 13: Test Before Hardware Ready
+
+Manually insert this in Firebase:
+
+energy_monitor:
+{
+voltage:230,
+current:2.5,
+power:575,
+energy_kWh:5.6,
+bill_INR:44.8,
+relay:1
+}
+
+If dashboard updates = website working.
+
+STEP 14: Common Errors
+Blank Website
+
+Cause:
+
+wrong database URL
+rules blocked
+wrong node names
+Graph Empty
+
+Cause:
+
+No energy_logs
+
+Bill zero
+
+No bill_INR
+
+STEP 15: Best Real Project Setup
+Live every 2 sec
+
+Update:
+
+energy_monitor
+Save history every 10 min
+
+Push to:
+
+energy_logs
+
+This keeps database clean.
+
+Final Required Paths Summary
+energy_monitor/voltage
+energy_monitor/current
+energy_monitor/power
+energy_monitor/energy_kWh
+energy_monitor/bill_INR
+energy_monitor/relay
+
+energy_logs/logID/timestamp
+energy_logs/logID/current
+energy_logs/logID/power
+energy_logs/logID/energy_kWh
+energy_logs/logID/bill_INR
+My Strong Recommendation
+
+Use PZEM004T + ESP32 + Firebase
+
+Best for final year project.
